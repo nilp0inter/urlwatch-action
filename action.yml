@@ -1,0 +1,102 @@
+name: 'URLWatch Website Change Detector'
+description: 'Monitor web pages for changes using urlwatch with GitHub Actions'
+inputs:
+  config-dir:
+    description: 'Path to directory containing urlwatch configuration files'
+    required: false
+    default: '.github/urlwatch'
+  cache-name:
+    description: 'Name for the cache persistence artifact'
+    required: false
+    default: 'urlwatch-cache'
+  create-issues:
+    description: 'Create GitHub issues when changes are detected'
+    required: false
+    default: 'true'
+  issue-header:
+    description: 'Title template for created issues'
+    required: false
+    default: 'Website changes detected 🌐'
+  issue-tags:
+    description: 'Comma-separated list of issue labels'
+    required: false
+    default: 'monitoring,update'
+outputs:
+  changes:
+    description: 'Raw output of detected changes from urlwatch'
+  report:
+    description: 'Formatted markdown report of changes'
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install urlwatch
+      run: pip install urlwatch
+      shell: bash
+
+    - name: Configure urlwatch
+      run: |
+        mkdir -p ~/.config/urlwatch ~/.cache/urlwatch
+        cp -r "${{ inputs.config-dir }}"/* ~/.config/urlwatch/
+      shell: bash
+
+    - name: Find previous cache
+      id: cache-manager
+      uses: actions/github-script@v7
+      continue-on-error: true
+      with:
+        script: |
+          const { data } = await github.rest.actions.listArtifactsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: '${{ inputs.cache-name }}',
+            per_page: 1
+          });
+          core.setOutput('artifact_id', data.artifacts[0]?.id || 0);
+
+    - name: Restore urlwatch cache
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.cache-name }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path: ~/.cache/urlwatch/
+      if: ${{ steps.cache-manager.outputs.artifact_id != 0 }}
+
+    - name: Execute monitoring
+      id: urlwatch-exec
+      run: |
+        set +e
+        output=$(urlwatch)
+        echo "changes<<EOF" >> $GITHUB_OUTPUT
+        echo "$output" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+        echo "report<<EOF" >> $GITHUB_OUTPUT
+        echo "\`\`\`" >> $GITHUB_OUTPUT
+        echo "$output" >> $GITHUB_OUTPUT
+        echo "\`\`\`" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Preserve new cache state
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.cache-name }}
+        path: ~/.cache/urlwatch/cache.db
+
+    - name: Create change notification
+      if: ${{ inputs.create-issues == 'true' && steps.urlwatch-exec.outputs.changes != '' }}
+      uses: actions/github-script@v7
+      env:
+        DETECTED_CHANGES: ${{ steps.urlwatch-exec.outputs.report }}
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '${{ inputs.issue-header }}',
+            body: process.env.DETECTED_CHANGES,
+            labels: '${{ inputs.issue-tags }}'.split(',')
+          });
