@@ -1,7 +1,5 @@
 # URLWatch Website Change Detector GitHub Action
 
-[![GitHub Actions Status](https://github.com/<your-username>/<your-repo>/workflows/CI/badge.svg)](https://github.com/<your-username>/<your-repo>/actions)
-
 A GitHub Action that monitors websites for changes using [urlwatch](https://thp.io/2008/urlwatch/). Get notified through GitHub Issues when your monitored pages change, with full history tracking and configurable filters.
 
 ## Features
@@ -46,7 +44,7 @@ A GitHub Action that monitors websites for changes using [urlwatch](https://thp.
      monitor:
        runs-on: ubuntu-latest
        steps:
-         - uses: your-username/urlwatch-action@v1
+         - uses: nilp0inter/urlwatch-action@v1
            with:
              config-dir: '.github/urlwatch'
              cache-name: 'website-monitor-state'
@@ -148,24 +146,4 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ---
 
-**Maintained by** Your Name | **Credits** to [urlwatch](https://thp.io/2008/urlwatch/) authors
-```
-
-This README includes:
-
-1. Clear installation/configuration instructions
-2. Visual badges (customize with your repo details)
-3. Input/output documentation
-4. Real-world use cases
-5. Advanced configuration examples
-6. Contribution guidelines
-7. License information
-
-To complete the setup:
-
-1. Add actual license file (MIT recommended)
-2. Create `.github/workflows/ci.yml` for testing
-3. Add screenshots/examples folder if needed
-4. Customize the "Maintained by" section at the bottom
-
-The documentation balances technical details with approachable examples, making it suitable for both new users and experienced developers.
+**Maintained by** Roberto Abdelkader Martínez Pérez | **Credits** to [urlwatch](https://thp.io/2008/urlwatch/) authors
