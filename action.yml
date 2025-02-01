@@ -51,13 +51,22 @@ runs:
       continue-on-error: true
       with:
         script: |
+          const path = require('path');
+
+          const workflowRef = process.env.GITHUB_WORKFLOW_REF;
+          const filePath = workflowRef.split('@')[0];
+          const workflow_id = path.basename(filePath);
+
+          // Fetch the most recent successful workflow run for this workflow file
           const response = await github.rest.actions.listWorkflowRuns({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            workflow_id: process.env.GITHUB_WORKFLOW_REF,
+            workflow_id,
             status: 'success',
             per_page: 1
           });
+
+          // Set the output to the run ID, or 0 if not found
           core.setOutput('run_id', response.data.workflow_runs[0]?.id || 0);
 
     - name: Restore urlwatch cache
