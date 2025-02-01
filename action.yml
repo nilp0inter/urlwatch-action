@@ -1,5 +1,7 @@
 name: 'URLWatch Website Change Detector'
 description: 'Monitor web pages for changes using urlwatch with GitHub Actions'
+icon: eye
+color: blue
 inputs:
   config-dir:
     description: 'Path to directory containing urlwatch configuration files'
