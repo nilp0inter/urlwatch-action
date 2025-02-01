@@ -21,6 +21,9 @@ inputs:
     description: 'Comma-separated list of issue labels'
     required: false
     default: 'monitoring,update'
+  token:
+    description: 'A github token'
+    required: true
 outputs:
   changes:
     description: 'Raw output of detected changes from urlwatch'
@@ -61,8 +64,8 @@ runs:
       uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
       with:
         name: ${{ inputs.cache-name }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        run-id: ${{ steps.last-id
+        github-token: ${{ inputs.token }}
+        run-id: ${{ steps.last-run.outputs.run_id }}
       if: ${{ steps.last-run.outputs.run_id != 0 }}
 
     - name: Execute monitoring
