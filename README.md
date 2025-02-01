@@ -1,149 +1,107 @@
-# URLWatch Website Change Detector GitHub Action
+# URLWatch Website Change Detector GitHub Action 🔍
 
-A GitHub Action that monitors websites for changes using [urlwatch](https://thp.io/2008/urlwatch/). Get notified through GitHub Issues when your monitored pages change, with full history tracking and configurable filters.
+Automated website change detection using GitHub Actions and [urlwatch](https://thp.io/2008/urlwatch/). Monitor web pages, APIs, or documents for modifications and get automatic GitHub issues with detailed diffs.
 
-## Features
+**Key Features**:
+- 🕵️♂️ Detect content changes with CSS/XPath filters
+- 📬 Automatic issue creation with configurable labels
+- 💾 State preservation between runs
+- ⚙️ Full urlwatch configuration support
+- 🛡️ Security-focused design (no credential storage)
 
-🌐 **Monitor any web resource** - Track HTML pages, JSON APIs, XML feeds, or any URL-accessible content  
-🔍 **Smart filtering** - Use CSS selectors, XPath, JSON paths, or regex to watch specific content  
-📦 **State management** - Maintains change history between runs using GitHub Artifacts  
-📬 **GitHub integration** - Automatic issue creation for detected changes  
-🛠 **Extensible** - Add custom filters and processing logic through Python hooks  
-📊 **Dual outputs** - Get raw changes and formatted markdown reports  
+## Quick Start 🚀
 
-## Quick Start
+### Basic Configuration
 
-1. **Create configuration directory** in your repo:
+1. Create config directory:
    ```bash
    mkdir -p .github/urlwatch
    ```
 
-2. **Add monitoring targets** in `.github/urlwatch/urls.yml`:
+2. Add monitoring targets (`.github/urlwatch/urls.yml`):
    ```yaml
-   - name: Example Documentation
-     url: https://docs.example.com
+   - name: Example Privacy Policy
+     url: https://example.com/privacy
      filter:
-       - css:div.main-content
-       - html2text
+       - css: article.main-content
    ```
 
-3. **Create workflow** (`.github/workflows/monitor.yml`):
+3. Create workflow (`.github/workflows/monitor.yml`):
    ```yaml
-   name: Website Change Monitoring
+   name: Website Monitoring
    on:
      schedule:
-       - cron: '0 */6 * * *'  # Every 6 hours
-     workflow_dispatch:
-   
-   permissions:
-     actions: read
-     contents: write
-     issues: write
-   
+       - cron: '0 8 * * *'  # Daily at 8 AM
+
    jobs:
      monitor:
        runs-on: ubuntu-latest
        steps:
          - uses: nilp0inter/urlwatch-action@v1
            with:
-             config-dir: '.github/urlwatch'
-             cache-name: 'website-monitor-state'
+             token: ${{ secrets.GITHUB_TOKEN }}
    ```
 
-## Configuration
+## Configuration ⚙️
+
+### Required Files
+
+| File | Purpose | Documentation |
+|------|---------|---------------|
+| `urls.yml` | List of URLs to monitor | [URLs Configuration](https://urlwatch.readthedocs.io/en/latest/jobs.html) |
+| `urlwatch.yaml` | Monitoring preferences | [Settings Guide](https://urlwatch.readthedocs.io/en/latest/configuration.html) |
 
 ### Action Inputs
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `config-dir` | Path to urlwatch config files | `.github/urlwatch` |
-| `cache-name` | Artifact name for storing state | `urlwatch-cache` |
-| `create-issues` | Create GitHub Issues for changes | `true` |
+| `config-dir` | Path to urlwatch config | `.github/urlwatch` |
+| `cache-name` | Cache artifact name | `urlwatch-cache` |
+| `create-issues` | Create issues on changes | `true` |
 | `issue-header` | Issue title template | `Website changes detected 🌐` |
-| `issue-tags` | Comma-separated issue labels | `monitoring,update` |
+| `issue-tags` | Comma-separated labels | `monitoring,update` |
+| `token` | GitHub token | **Required** |
 
-### Required Files
+### Security Notice 🔒
 
-1. **urls.yml** - Main configuration file:
-   ```yaml
-   - name: "API Status"
-     url: "https://api.example.com/status"
-     filter:
-       - json:status
-       - strip
-   ```
+1. **Never store credentials** in configuration files
+2. This action only uses the **text reporter** for GitHub issues
+3. Sensitive filters should be added via `hooks.py` ([Filter Documentation](https://urlwatch.readthedocs.io/en/latest/filters.html))
 
-2. **hooks.py** (optional) - Custom filters/processors:
-   ```python
-   def filter_price(value):
-       return float(value.replace('$', ''))
-   ```
+## Advanced Usage 💡
 
-3. **config.yml** (optional) - urlwatch settings:
-   ```yaml
-   report:
-     html: true
-     diff: unified
-   ```
+### Custom Workflow Example
 
-## Outputs
-
-Access monitoring results in subsequent steps:
 ```yaml
-- name: Show results
-  run: |
-    echo "${{ steps.monitor.outputs.changes }}"
-    echo "${{ steps.monitor.outputs.report }}"
+- uses: nilp0inter/urlwatch-action@v1
+  with:
+    config-dir: 'config/monitoring'
+    cache-name: 'custom-cache'
+    issue-header: '[Alert] Change detected: ${{ now }}'
+    issue-tags: 'urgent,legal'
+    token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-| Output | Description |
-|--------|-------------|
-| `changes` | Raw text output from urlwatch |
-| `report` | Markdown-formatted change report |
+### Integration with Other Actions
 
-## Example Use Cases
-
-- **Documentation tracking**: Get notified when API docs change
-- **Status monitoring**: Watch for service status page updates
-- **Price tracking**: Monitor e-commerce product pages
-- **Competitor analysis**: Track changes to competitor websites
-- **Regulatory compliance**: Watch for legal document updates
-
-## Advanced Usage
-
-### Custom Filters
-```python
-# hooks.py
-from urlwatch.filters import FilterBase
-
-class EmojiCounter(FilterBase):
-    def filter(self, data):
-        return f"😀 Count: {data.count('😀')}"
-```
-
-### Workflow Integration
 ```yaml
+- name: Run Monitor
+  uses: nilp0inter/urlwatch-action@v1
+  id: urlwatch
+  token: ${{ secrets.GITHUB_TOKEN }}
+
 - name: Post to Slack
-  if: ${{ steps.monitor.outputs.changes != '' }}
+  if: ${{ steps.urlwatch.outputs.changes != '' }}
   uses: slackapi/slack-github-action@v1
   with:
     payload: |
       {
-        "text": "${{ steps.monitor.outputs.report }}"
+        "text": "Detected changes: ${{ steps.urlwatch.outputs.report }}"
       }
 ```
 
-## Contributing
 
-Contributions welcome! Please follow these steps:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a Pull Request
+## Documentation Links 📚
 
-## License
-
-MIT License - See [LICENSE](LICENSE) for details
-
----
-
-**Maintained by** Roberto Abdelkader Martínez Pérez | **Credits** to [urlwatch](https://thp.io/2008/urlwatch/) authors
+- [Official urlwatch Documentation](https://urlwatch.readthedocs.io/)
+- [GitHub Actions Workflow Syntax](https://docs.github.com/en/actions/using-workflows)
