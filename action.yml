@@ -4,16 +4,42 @@ branding:
   icon: eye
   color: blue
 inputs:
-  config-dir:
-    description: 'Path to directory containing urlwatch configuration files'
+  urls:
+    description: 'Content of the urls.yaml file for urlwatch'
+    required: true
+  settings:
+    description: 'Content of the urlwatch.yaml file for urlwatch'
     required: false
-    default: '.github/urlwatch'
+    default: |
+      display:
+        empty-diff: true
+        error: true
+        new: true
+        unchanged: false
+      job_defaults:
+        all: {}
+        browser: {}
+        shell: {}
+        url: {}
+      report:
+        stdout:
+          color: false
+          enabled: true
+        text:
+          details: true
+          footer: false
+          line_length: 120
+          minimal: false
+          separate: false
+  hooks:
+    description: 'Content of the hooks.py file for urlwatch'
+    required: false
   cache-name:
     description: 'Name for the cache persistence artifact'
     required: false
     default: 'urlwatch-cache'
-  create-issues:
-    description: 'Create GitHub issues when changes are detected'
+  create-issue:
+    description: 'Create GitHub issue when changes are detected'
     required: false
     default: 'true'
   issue-header:
@@ -29,15 +55,14 @@ inputs:
     required: true
 outputs:
   changes:
+    value: ${{ steps.urlwatch-exec.outputs.changes }}
     description: 'Raw output of detected changes from urlwatch'
   report:
+    value: ${{ steps.urlwatch-exec.outputs.report }}
     description: 'Formatted markdown report of changes'
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
     - name: Install urlwatch
       run: pip install urlwatch
       shell: bash
@@ -45,7 +70,18 @@ runs:
     - name: Configure urlwatch
       run: |
         mkdir -p ~/.config/urlwatch ~/.cache/urlwatch
-        cp -r "${{ inputs.config-dir }}"/* ~/.config/urlwatch/
+        # cp -r "${{ inputs.config-dir }}"/* ~/.config/urlwatch/
+        cat <<EOF > ~/.config/urlwatch/urls.yaml
+        ${{ inputs.urls }}
+        EOF
+        cat <<EOF > ~/.config/urlwatch/urlwatch.yaml
+        ${{ inputs.settings }}
+        EOF
+        if [[ -n "${{ inputs.hooks }}" ]]; then
+          cat <<EOF > ~/.config/urlwatch/hooks.py
+          ${{ inputs.hooks }}
+          EOF
+        fi
       shell: bash
 
     - name: Find previous cache
@@ -108,7 +144,7 @@ runs:
         path: ~/.cache/urlwatch/cache.db
 
     - name: Create change notification
-      if: ${{ inputs.create-issues == 'true' && steps.urlwatch-exec.outputs.changes != '' }}
+      if: ${{ inputs.create-issue == 'true' && steps.urlwatch-exec.outputs.changes != '' }}
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       env:
         DETECTED_CHANGES: ${{ steps.urlwatch-exec.outputs.report }}
