@@ -78,9 +78,9 @@ runs:
         ${{ inputs.settings }}
         EOF
         if [[ -n "${{ inputs.hooks }}" ]]; then
-          cat <<EOF > ~/.config/urlwatch/hooks.py
-          ${{ inputs.hooks }}
-          EOF
+        cat <<EOF > ~/.config/urlwatch/hooks.py
+        ${{ inputs.hooks }}
+        EOF
         fi
       shell: bash
 
