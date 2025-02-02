@@ -38,18 +38,6 @@ inputs:
     description: 'Name for the cache persistence artifact'
     required: false
     default: 'urlwatch-cache'
-  create-issue:
-    description: 'Create GitHub issue when changes are detected'
-    required: false
-    default: 'true'
-  issue-header:
-    description: 'Title template for created issues'
-    required: false
-    default: 'Website changes detected 🌐'
-  issue-tags:
-    description: 'Comma-separated list of issue labels'
-    required: false
-    default: 'monitoring,update'
   token:
     description: 'A github token'
     required: true
@@ -142,18 +130,3 @@ runs:
       with:
         name: ${{ inputs.cache-name }}
         path: ~/.cache/urlwatch/cache.db
-
-    - name: Create change notification
-      if: ${{ inputs.create-issue == 'true' && steps.urlwatch-exec.outputs.changes != '' }}
-      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-      env:
-        DETECTED_CHANGES: ${{ steps.urlwatch-exec.outputs.report }}
-      with:
-        script: |
-          await github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: '${{ inputs.issue-header }}',
-            body: process.env.DETECTED_CHANGES,
-            labels: '${{ inputs.issue-tags }}'.split(',')
-          });
