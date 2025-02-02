@@ -17,7 +17,8 @@ inputs:
         new: true
         unchanged: false
       job_defaults:
-        all: {}
+        all:
+          treate_new_as_changed: true
         browser: {}
         shell: {}
         url: {}
